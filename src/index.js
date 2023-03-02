@@ -21,11 +21,16 @@ server.listen(process.env.PORT,()=>{
 })
 
 io.on("connection",socket=>{
+    socket.join(socket.id);
     console.log(groups);
     socket.on("disconnect",()=>{
+        groups = groups.filter(group=>group.members.length!==0);
         const location = groups.find(group=>group.members.find(members=>members.socketId===socket.id));
-        if(location)
+        if(location){
             location.members = location.members?.filter(members=>members.socketId!==socket.id);
+            if(!location.members.length)
+                groups = groups.filter(group=>group.id!==location.id);
+        }
         console.log(groups);
     })
 
@@ -68,7 +73,17 @@ io.on("connection",socket=>{
 
     socket.on('refresh',({groupId})=>{
         const data = groups.find(group=>group.id===groupId);
-        socket.to(groupId).emit("send-group-info",data);
+        socket.to(socket.id).emit("send-group-info",data);
     })
-    
+    socket.on("removerUser",({userId,groupId})=>{
+        const location = groups.find(group=>group.id===groupId);
+        if(location){
+            const admin = location.members?.find(member=>member.socketId===location.owner);
+            const remover = location.members?.find(member=>member.socketId===userId);
+            location.members = location.members?.filter(member=>member.socketId!==userId);
+            socket.to(groupId).emit("response-remove",{remover,admin});
+            console.log({remover,admin});
+            socket.to(groupId).emit("send-group-info",location);
+        }
+    })
 })
