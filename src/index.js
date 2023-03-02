@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-require('dotenv').config()
+require('dotenv').config();
 const cors = require("cors");
 app.use(cors());
 const bodyParser = require('body-parser');
@@ -11,7 +11,7 @@ const socket = require("socket.io");
 const server = require("http").createServer(app);
 const io = new socket.Server(server,{
     cors:{
-        origin:"https://groupchat-api-4img.onrender.com",
+        origin:"https://my-group-chat.netlify.app",
         methods:["GET", "POST"]
     }
 })
