@@ -11,7 +11,7 @@ const socket = require("socket.io");
 const server = require("http").createServer(app);
 const io = new socket.Server(server,{
     cors:{
-        origin:"http://localhost:3000",
+        origin:"https://groupchat-api-4img.onrender.com",
         methods:["GET", "POST"]
     }
 })
@@ -22,7 +22,6 @@ server.listen(process.env.PORT,()=>{
 
 io.on("connection",socket=>{
     socket.join(socket.id);
-    console.log(groups);
     socket.on("disconnect",()=>{
         groups = groups.filter(group=>group.members.length!==0);
         const location = groups.find(group=>group.members.find(members=>members.socketId===socket.id));
@@ -31,7 +30,6 @@ io.on("connection",socket=>{
             if(!location.members.length)
                 groups = groups.filter(group=>group.id!==location.id);
         }
-        console.log(groups);
     })
 
     socket.on("createRoom",async({groupName,groupID,password,name})=>{
@@ -39,8 +37,6 @@ io.on("connection",socket=>{
         groups.push({groupName,id:groupID,password,owner:socket.id,message:[],members:[{socketId:socket.id,username:name}]});
         socket.join(groupID);
         const groupLacations = await groups.find(group=>group.id===groupID);
-        console.log({groupLacationscreated:groupLacations})
-        console.log(groups);
         socket.to(groupID).emit("send-group-info",groupLacations);
     });
     socket.on("joinRoom",({groupID,password,name,joinDate})=>{
@@ -51,9 +47,7 @@ io.on("connection",socket=>{
                 groupLacations.members.push({socketId:socket.id,username:name,joinDate});
                 socket.join(groupID);
                 socket.to(groupID).emit("send-group-info",groupLacations);
-                console.log(groups);
                 socket.emit("response",{message:"join group successfully",success:true,groupID});
-                console.log({groupLacations});
             }
             else 
                 socket.emit("response",{message:"Incorrect password",success:false,groupID});
@@ -64,9 +58,7 @@ io.on("connection",socket=>{
     });
 
     socket.on("sendMessage",({ms,sendDate,sender,groupID})=>{
-        console.log({ms,sendDate,sender,groupID});
         const location  = groups.find(group=>group.id===groupID);
-        console.log({location});
         const author = location?.members.find(member=>member.socketId===sender);
         socket.to(groupID).emit("backMessage",{ms,sendDate,sender,groupID,author:author?.username,owner:location?.owner});
     })
@@ -82,7 +74,6 @@ io.on("connection",socket=>{
             const remover = location.members?.find(member=>member.socketId===userId);
             location.members = location.members?.filter(member=>member.socketId!==userId);
             socket.to(groupId).emit("response-remove",{remover,admin});
-            console.log({remover,admin});
             socket.to(groupId).emit("send-group-info",location);
         }
     })
